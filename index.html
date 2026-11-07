@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Leinaga kasvamine - Kei Karlsoni lasteraamat leinast, veebis.">
+<title>Leinaga kasvamine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Itim&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one stage that shows a whole spread on wide screens and one page at a time on phones. */
+:root{
+  color-scheme:light;
+  --bg:#efe9cf; --ink:#1c2326; --muted:#6a706b; --chip:#fffbe6; --chip-ink:#1c2326; --chip-on:#1c2b31; --chip-on-ink:#f8f5d2; --line:rgba(28,35,38,.15);
+  --paper:#f8f5d2; --page-ink:#1c2326;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#11181b; --ink:#f3efd6; --muted:#a5aba4; --chip:#1d272b; --chip-ink:#f3efd6; --chip-on:#f3efd6; --chip-on-ink:#11181b; --line:rgba(243,239,214,.15); color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#11181b; --ink:#f3efd6; --muted:#a5aba4; --chip:#1d272b; --chip-ink:#f3efd6; --chip-on:#f3efd6; --chip-on-ink:#11181b; --line:rgba(243,239,214,.15); color-scheme:dark; }
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:Inter,system-ui,sans-serif; margin:0; overflow-x:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  padding-block:16px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+
+.bar{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; font-size:14px}
+button{font:inherit; border:1px solid var(--line); background:var(--chip); color:var(--chip-ink); padding:7px 14px; border-radius:999px; cursor:pointer}
+button[aria-pressed="true"]{background:var(--chip-on); color:var(--chip-on-ink); border-color:transparent}
+button:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+button:disabled{opacity:.35; cursor:default}
+.sep{width:1px; background:var(--line); margin:0 4px}
+@media (max-width:520px){.sep{display:none}}
+
+#stage{position:relative; max-width:100%; touch-action:pan-y; user-select:none}
+#stage.narrow{overflow:hidden; border-radius:6px; box-shadow:0 20px 50px -20px rgba(0,0,0,.45)}
+.wide .sheet{border-radius:6px; box-shadow:0 20px 50px -20px rgba(0,0,0,.45)}
+.sheet{position:absolute; top:0; height:100%; opacity:0; visibility:hidden; transition:opacity .55s ease, visibility 0s .55s; container-type:inline-size; background:var(--paper); overflow:hidden}
+.sheet.on{opacity:1; visibility:visible; transition:opacity .55s ease}
+/* wide: spreads fill the stage, single pages sit centred on it */
+.wide .sheet.spread{left:0; width:100%}
+.wide .sheet.single{left:25%; width:50%}
+/* narrow: one page; a spread is twice as wide and slides to show its left or right half */
+.narrow .sheet.single{left:0; width:100%}
+.narrow .sheet.spread{width:200%; left:0}
+.narrow .sheet.spread.right{left:-100%}
+
+.sheet > img{position:absolute; display:block; -webkit-user-drag:none; pointer-events:none}
+.fill{inset:0; width:100%; height:100%}
+.orig{inset:0; width:100%; height:100%; object-fit:cover; object-position:right; opacity:0; transition:opacity .5s}
+#stage.show-orig .orig{opacity:1}
+.t{position:absolute; font-family:Itim,"Comic Neue",cursive; color:var(--page-ink); line-height:1.4; margin:0}
+.t p{margin:0}
+
+/* cover */
+.c-title{left:66.36%; top:22.65%; width:23.73%; text-align:center; font-size:3.61cqw; color:#466561; line-height:1.3}
+.c-sub{left:65.2%; top:39.3%; width:26%; text-align:center; font-size:1.84cqw}
+.c-author{left:70%; top:90%; width:16.4%; text-align:center; font-size:1.74cqw; color:#f6f4d1}
+.c-blurb{left:4.79%; top:42.6%; width:34.14%; text-align:center; font-size:1.55cqw}
+.c-blurb p + p{margin-top:1.4em}
+
+/* cover: Grief's eyes glance around now and then, and blink */
+.eye{position:absolute; border-radius:50%; overflow:hidden; background:#436663; box-shadow:0 0 0 .06cqw #1b2a2f;
+  animation:blink 7.3s ease-in-out infinite; transform-origin:50% 55%}
+.eye i{position:absolute; left:var(--px); top:var(--py); width:var(--ps); aspect-ratio:1; border-radius:50%; background:#15222c;
+  transform:translate(-50%,-50%); animation:look 11s ease-in-out infinite}
+@keyframes look{
+  0%,22%{transform:translate(-50%,-50%)}
+  30%,48%{transform:translate(-88%,-12%)}
+  56%,70%{transform:translate(-50%,-50%)}
+  77%,88%{transform:translate(-62%,6%)}
+  95%,100%{transform:translate(-50%,-50%)}
+}
+@keyframes blink{0%,90%,100%{transform:scaleY(1)} 92.5%{transform:scaleY(.08)} 95%{transform:scaleY(1)}}
+
+/* spreads: live text placed where it sits in the printed book */
+.tx{position:absolute; font-family:Itim,"Comic Neue",cursive; line-height:1.4; font-size:var(--fs)}
+.tx.en, .tx.de, .tx.et, .orig.en, .orig.de, .orig.et{display:none}
+#stage[data-lang="en"] .tx.en, #stage[data-lang="de"] .tx.de, #stage[data-lang="et"] .tx.et{display:block}
+#stage[data-lang="en"] .orig.en, #stage[data-lang="de"] .orig.de, #stage[data-lang="et"] .orig.et{display:block}
+.narrow .tx.body{font-size:calc(var(--fs) * 1.08)}
+.tx.pulse{font-size:calc(var(--fs) * 1.4); white-space:nowrap; text-align:center; transform:translate(-50%,-12%); animation:lab var(--d) ease-in-out infinite; animation-delay:var(--o)}
+.tx.pulse.light{text-shadow:0 .1cqw .6cqw rgba(20,30,40,.45)}
+.tx.pulse.wrap{white-space:normal; width:26%}
+@keyframes lab{0%,100%{opacity:.45} 50%{opacity:1}}
+/* rain: each drawn drop slides down along its slant and fades */
+.drop{animation:fall var(--d) linear infinite; animation-delay:var(--o); opacity:0}
+@keyframes fall{0%{opacity:0; transform:translate(.35cqw,-.8cqw)} 20%{opacity:1} 75%{opacity:1} 100%{opacity:0; transform:translate(-.45cqw,1cqw)}}
+/* dizzy: the little orange swirl-dots turn in place */
+.turn{animation:spin var(--d) linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* sea: whales glide a little, bubbles rise */
+.whale{animation:swim var(--d) ease-in-out infinite alternate}
+@keyframes swim{from{transform:none} to{transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
+.bubble{animation:rise var(--d) ease-in-out infinite; animation-delay:var(--o)}
+@keyframes rise{0%{opacity:0; transform:translateY(.5cqw)} 25%{opacity:1} 75%{opacity:1} 100%{opacity:0; transform:translateY(-1.2cqw)}}
+/* apples glow, little ones stretch up from their feet */
+.apple{animation:apple var(--d) ease-in-out infinite; animation-delay:var(--o)}
+@keyframes apple{0%,100%{transform:scale(1); filter:none} 50%{transform:scale(1.12); filter:drop-shadow(0 0 .8cqw rgba(255,150,90,.85))}}
+.chick{transform-origin:50% 100%; animation:chick var(--d) ease-in-out infinite; animation-delay:var(--o)}
+@keyframes chick{0%,100%{transform:scale(1)} 50%{transform:scale(1.03,1.07)}}
+/* memory bubble glows; heart balloon sways on its string; ball lifts; clouds drift */
+.memglow{position:absolute; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; pointer-events:none; mix-blend-mode:screen;
+  background:radial-gradient(circle, rgba(255,236,170,.55) 0%, rgba(255,226,150,.25) 38%, transparent 66%); animation:glow 4.5s ease-in-out infinite alternate}
+.heart{animation:sway 3.6s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-5deg)} to{transform:rotate(5deg)}}
+.ball{animation:lift 2.4s ease-in-out infinite alternate}
+@keyframes lift{from{transform:none} to{transform:translateY(-.55cqw)}}
+.cloud{animation:drift var(--d) ease-in-out infinite alternate; animation-delay:var(--o)}
+@keyframes drift{from{transform:translateX(-.8cqw)} to{transform:translateX(.8cqw)}}
+
+/* dedication: the drawn dots swell and glow */
+.dot{left:var(--x); top:var(--y); width:var(--s); transform:translate(-50%,-50%); animation:dot var(--d) ease-in-out infinite; animation-delay:var(--o)}
+@keyframes dot{
+  0%,100%{transform:translate(-50%,-50%) scale(.82); filter:drop-shadow(0 0 0 rgba(var(--c),0))}
+  50%{transform:translate(-50%,-50%) scale(1.14); filter:drop-shadow(0 0 .9cqw rgba(var(--c),.95))}
+}
+.d-text{left:14.5%; top:32.9%; width:71.2%; text-align:right; font-style:italic; font-size:3.77cqw}
+
+/* night sky: a few bright stars pulse, the drawn bright star breathes */
+.spark{position:absolute; left:var(--x); top:var(--y); width:var(--s); aspect-ratio:1; transform:translate(-50%,-50%); pointer-events:none; animation:spark var(--d) ease-in-out infinite; animation-delay:var(--o)}
+.spark::before,.spark::after,.spark i{content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border-radius:50%}
+.spark i{width:100%; height:100%; background:radial-gradient(circle,#fffef4 0%,rgba(255,250,215,.95) 9%,rgba(255,245,200,.35) 24%,rgba(190,220,255,.1) 46%,transparent 70%)}
+.spark::before{width:170%; height:5%; background:linear-gradient(90deg,transparent,rgba(255,250,225,.9) 50%,transparent)}
+.spark::after{width:5%; height:110%; background:linear-gradient(180deg,transparent,rgba(255,250,225,.85) 50%,transparent)}
+@keyframes spark{0%,100%{opacity:.12; transform:translate(-50%,-50%) scale(.55)} 50%{opacity:1; transform:translate(-50%,-50%) scale(1)}}
+.glow{position:absolute; left:64.4%; top:48.67%; width:9%; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle,rgba(255,250,215,.75) 0%,rgba(255,245,200,.28) 22%,rgba(190,220,255,.08) 45%,transparent 70%);
+  mix-blend-mode:screen; animation:glow 5s ease-in-out infinite alternate}
+@keyframes glow{from{opacity:.25} to{opacity:.95}}
+.s-text{left:5.5%; top:21%; width:38.5%; text-align:center; font-size:2.15cqw; line-height:1.38}
+.s-text p + p{margin-top:1.15em}
+.pg{font-size:1.3cqw; bottom:3.2%; color:#e8e4c8}
+.pg.l{left:3.4%} .pg.r{right:4%}
+/* on a phone each half of a spread is a page, so its type can be a touch larger */
+.narrow .s-text{font-size:2.3cqw}
+
+.nav{display:flex; align-items:center; gap:14px; font-size:14px}
+.count{min-width:4.5em; text-align:center; color:var(--muted); font-variant-numeric:tabular-nums}
+.nav button{padding:8px 18px}
+
+@media (prefers-reduced-motion: reduce){
+  .dot,.spark,.drop,.tx.pulse,.bubble,.apple,.chick{animation-duration:calc(var(--d) * 1.6)}
+  .sheet,.sheet.on{transition:none}
+}
+
+/* edge to edge: the book fills the window; the arrows float over it */
+html,body{height:100%}
+body{padding:0!important; gap:0; background:#efe9cc; overflow:hidden}
+#stage.narrow, .wide .sheet{border-radius:0; box-shadow:none}
+.nav{position:fixed; left:0; right:0; bottom:max(10px, env(safe-area-inset-bottom, 0px)); justify-content:center; pointer-events:none; z-index:5}
+.nav button{pointer-events:auto; position:fixed; top:50%; transform:translateY(-50%); width:48px; height:48px; padding:0; border-radius:50%;
+  background:rgba(255,251,232,.78); border:1px solid rgba(28,35,38,.12); color:#1c2326; font-size:20px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:0 4px 14px rgba(0,0,0,.12)}
+#prev{left:max(12px, env(safe-area-inset-left, 0px))}
+#next{right:max(12px, env(safe-area-inset-right, 0px))}
+.count{pointer-events:auto; background:rgba(255,251,232,.78); color:#4b524f; padding:4px 12px; border-radius:999px; font-size:13px; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+@media (max-width:719px){ .nav button{top:auto; bottom:max(10px, env(safe-area-inset-bottom, 0px)); transform:none; width:44px; height:44px} }
+</style>
+</head>
+<body>
+
+
+<div id="stage" aria-roledescription="raamat" aria-live="polite">
+
+  <section class="sheet spread" data-front="right" aria-label="Kaas">
+    <img class="fill" src="cover/bg.jpg" alt="K&#245;rge puu suure oran&#382;i p&#228;ikese all. Poiss istub tumedal k&#252;nkal &#252;mmarguse karvase suursilmse olendi k&#245;rval.">
+    <div class="eye" style="left:72.963%;top:74.99%;width:1.892%;height:5.003%"><i style="--px:64.1%;--py:34.7%;--ps:67.4%"></i></div>
+    <div class="eye" style="left:75.118%;top:74.72%;width:1.795%;height:4.892%"><i style="--px:65.4%;--py:34.1%;--ps:71%"></i></div>
+    <div class="t c-blurb" data-k="blurb"></div>
+    <div class="t c-title" data-k="title"></div>
+    <div class="t c-sub" data-k="sub"></div>
+    <div class="t c-author" data-k="author"></div>
+    
+  </section>
+  <section class="sheet single" aria-label="P&#252;hendus">
+    <img class="fill" src="p01/base.jpg" alt="Isa ja poeg istuvad k&#245;rvuti k&#252;nkal, nende kohal h&#245;ljuvad v&#228;rvilised t&#228;pid.">
+    <img class="dot" src="p01/dot0.png" alt="" style="--x:20.41%;--y:39.79%;--s:2.86%;--d:3.1s;--o:-0.9s;--c:255,214,130">
+    <img class="dot" src="p01/dot1.png" alt="" style="--x:13.16%;--y:40.79%;--s:2.65%;--d:4.3s;--o:-2.3s;--c:255,214,130">
+    <img class="dot" src="p01/dot2.png" alt="" style="--x:16.33%;--y:43.50%;--s:3.27%;--d:3.2s;--o:-1.7s;--c:255,214,130">
+    <img class="dot" src="p01/dot3.png" alt="" style="--x:45.20%;--y:44.36%;--s:2.86%;--d:3.8s;--o:-0.6s;--c:255,214,130">
+    <img class="dot" src="p01/dot4.png" alt="" style="--x:24.49%;--y:44.64%;--s:2.86%;--d:4.2s;--o:-0.5s;--c:255,214,130">
+    <img class="dot" src="p01/dot5.png" alt="" style="--x:35.71%;--y:46.93%;--s:3.67%;--d:3.6s;--o:-2.1s;--c:255,214,130">
+    <img class="dot" src="p01/dot6.png" alt="" style="--x:13.27%;--y:47.93%;--s:2.86%;--d:3.7s;--o:-2.3s;--c:255,214,130">
+    <img class="dot" src="p01/dot7.png" alt="" style="--x:41.63%;--y:49.00%;--s:2.86%;--d:4.2s;--o:-3.8s;--c:255,214,130">
+    <img class="dot" src="p01/dot8.png" alt="" style="--x:48.27%;--y:50.14%;--s:3.06%;--d:3.5s;--o:-2.6s;--c:255,214,130">
+    <img class="dot" src="p01/dot9.png" alt="" style="--x:47.86%;--y:54.79%;--s:3.06%;--d:4.1s;--o:-1.2s;--c:255,214,130">
+    <img class="dot" src="p01/dot10.png" alt="" style="--x:5.31%;--y:56.57%;--s:3.27%;--d:3.0s;--o:-3.9s;--c:255,214,130">
+    <img class="dot" src="p01/dot11.png" alt="" style="--x:37.76%;--y:32.86%;--s:2.86%;--d:3.5s;--o:-1.3s;--c:215,230,222">
+    <img class="dot" src="p01/dot12.png" alt="" style="--x:41.53%;--y:42.50%;--s:2.86%;--d:4.4s;--o:-2.3s;--c:215,230,222">
+    <img class="dot" src="p01/dot13.png" alt="" style="--x:32.45%;--y:44.36%;--s:3.06%;--d:3.8s;--o:-3.1s;--c:215,230,222">
+    <img class="dot" src="p01/dot14.png" alt="" style="--x:53.57%;--y:50.00%;--s:2.86%;--d:3.0s;--o:-2.8s;--c:215,230,222">
+    <img class="dot" src="p01/dot15.png" alt="" style="--x:51.02%;--y:52.79%;--s:2.45%;--d:3.6s;--o:-0.4s;--c:215,230,222">
+    <img class="dot" src="p01/dot16.png" alt="" style="--x:54.08%;--y:56.36%;--s:2.45%;--d:4.1s;--o:-3.7s;--c:215,230,222">
+    <img class="dot" src="p01/dot17.png" alt="" style="--x:58.16%;--y:59.29%;--s:2.24%;--d:3.3s;--o:-2.5s;--c:215,230,222">
+    <div class="t d-text" data-k="ded"></div>
+    
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 2 ja 3">
+    <img class="fill" src="s02/bg.jpg" alt="">
+    <div class="eye" style="left:26.131%;top:52.192%;width:2.907%;height:7.220%;background:rgb(78,138,121);rotate:-8.6deg"><i style="--px:67.2%;--py:63.6%;--ps:68.4%;background:rgb(21,35,44)"></i></div>
+    <div class="eye" style="left:31.649%;top:51.743%;width:2.533%;height:7.227%;background:rgb(78,138,121);rotate:5.4deg"><i style="--px:46.8%;--py:61.0%;--ps:75.8%;background:rgb(21,35,44)"></i></div>
+    <div class="tx et body" style="left:58.23%;top:20.01%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Mina olen Lein. Ma olen siin sinuga, sest sa kaotasid endale l&#228;hedase inimese.<br><br>Ma tean, et tundun sulle alguses v&#245;&#245;ras ja kindlasti ka hirmutav. Aga kui sa &#245;pid mind tundma, siis n&#228;ed, et ma aitan sind sinu raskel ajal ja v&#245;in olla sulle isegi s&#245;braks.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 4 ja 5">
+    <img class="fill" src="s03/bg.jpg" alt="">
+    <div class="tx et body" style="left:10.33%;top:27.68%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Ma toon endaga kaasa palju tundeid.  Nagu vikerkaares on v&#228;rve, on tundeid palju ja erinevaid. <br><br>K&#245;ik, mida sa tunned on &#245;ige. Ei ole valesid v&#245;i mittesobivaid tundeid.</div>
+    <div class="tx et lab pulse light" style="left:80.59%;top:19.56%;--fs:2.870cqw;color:#ffffff;--d:3.65s;--o:-0.7s">Kurb</div>
+    <div class="tx et lab pulse light" style="left:63.66%;top:32.82%;--fs:2.870cqw;color:#ffffff;--d:4.10s;--o:-1.4s">Vihane</div>
+    <div class="tx et lab pulse light" style="left:86.03%;top:36.14%;--fs:2.870cqw;color:#ffffff;--d:4.55s;--o:-2.1s">Segaduses</div>
+    <div class="tx et lab pulse light" style="left:74.06%;top:27.85%;--fs:2.870cqw;color:#ffffff;--d:3.20s;--o:-2.8s">Kuri</div>
+    <div class="tx et lab pulse light" style="left:70.56%;top:44.44%;--fs:2.870cqw;color:#ffffff;--d:3.65s;--o:-3.5s">Hirmunud</div>
+    <div class="tx et lab pulse light" style="left:86.17%;top:11.26%;--fs:2.870cqw;color:#ffffff;--d:4.10s;--o:-4.2s">Pettunud</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 6 ja 7">
+    <img class="fill" src="s04/bg.jpg" alt="">
+    <img class="dot" src="s04/d0.png" alt="" style="--x:70.67%;--y:58.58%;--s:1.83%;--d:4.5s;--o:-2.0s;--c:79,140,122">
+    <img class="dot" src="s04/d1.png" alt="" style="--x:74.00%;--y:61.44%;--s:1.75%;--d:4.6s;--o:-0.3s;--c:230,98,59">
+    <img class="dot" src="s04/d2.png" alt="" style="--x:18.33%;--y:62.43%;--s:2.00%;--d:4.0s;--o:-1.5s;--c:0,130,128">
+    <img class="dot" src="s04/d3.png" alt="" style="--x:83.00%;--y:62.37%;--s:1.83%;--d:4.3s;--o:-0.7s;--c:0,130,128">
+    <img class="dot" src="s04/d4.png" alt="" style="--x:11.67%;--y:62.66%;--s:2.17%;--d:4.4s;--o:-2.2s;--c:0,130,128">
+    <img class="dot" src="s04/d5.png" alt="" style="--x:57.79%;--y:63.07%;--s:2.00%;--d:4.4s;--o:-1.9s;--c:79,140,122">
+    <img class="dot" src="s04/d6.png" alt="" style="--x:70.58%;--y:63.77%;--s:1.83%;--d:3.7s;--o:-3.2s;--c:79,140,122">
+    <img class="dot" src="s04/d7.png" alt="" style="--x:40.58%;--y:64.12%;--s:2.08%;--d:4.6s;--o:-1.5s;--c:79,140,122">
+    <img class="dot" src="s04/d8.png" alt="" style="--x:46.50%;--y:64.35%;--s:2.08%;--d:4.6s;--o:-3.7s;--c:230,98,59">
+    <img class="dot" src="s04/d9.png" alt="" style="--x:22.17%;--y:65.69%;--s:1.92%;--d:3.3s;--o:-2.4s;--c:143,55,33">
+    <img class="dot" src="s04/d10.png" alt="" style="--x:78.21%;--y:66.04%;--s:1.92%;--d:4.1s;--o:-3.8s;--c:230,98,59">
+    <img class="dot" src="s04/d11.png" alt="" style="--x:24.83%;--y:67.15%;--s:1.92%;--d:4.1s;--o:-0.5s;--c:143,55,33">
+    <img class="dot" src="s04/d12.png" alt="" style="--x:18.92%;--y:67.74%;--s:1.92%;--d:3.8s;--o:-2.0s;--c:0,130,128">
+    <img class="dot" src="s04/d13.png" alt="" style="--x:41.58%;--y:68.20%;--s:2.17%;--d:3.8s;--o:-3.8s;--c:143,55,33">
+    <img class="dot" src="s04/d14.png" alt="" style="--x:81.33%;--y:68.20%;--s:2.08%;--d:3.6s;--o:-0.9s;--c:143,55,33">
+    <img class="dot" src="s04/d15.png" alt="" style="--x:72.50%;--y:68.38%;--s:1.75%;--d:3.8s;--o:-2.6s;--c:230,98,59">
+    <img class="dot" src="s04/d16.png" alt="" style="--x:47.29%;--y:69.54%;--s:2.00%;--d:4.5s;--o:-2.3s;--c:79,140,122">
+    <img class="dot" src="s04/d17.png" alt="" style="--x:37.88%;--y:69.84%;--s:2.08%;--d:3.4s;--o:-3.7s;--c:143,55,33">
+    <img class="dot" src="s04/d18.png" alt="" style="--x:58.46%;--y:70.60%;--s:2.00%;--d:3.8s;--o:-2.7s;--c:0,130,128">
+    <img class="dot" src="s04/d19.png" alt="" style="--x:39.88%;--y:70.60%;--s:1.83%;--d:3.8s;--o:-0.9s;--c:79,140,122">
+    <img class="dot" src="s04/d20.png" alt="" style="--x:35.08%;--y:70.95%;--s:2.08%;--d:4.1s;--o:-3.1s;--c:230,98,59">
+    <img class="dot" src="s04/d21.png" alt="" style="--x:23.21%;--y:71.18%;--s:1.92%;--d:3.3s;--o:-1.8s;--c:79,140,122">
+    <img class="dot" src="s04/d22.png" alt="" style="--x:44.62%;--y:72.29%;--s:2.00%;--d:3.6s;--o:-0.7s;--c:230,98,59">
+    <img class="dot" src="s04/d23.png" alt="" style="--x:33.21%;--y:72.70%;--s:1.92%;--d:3.4s;--o:-3.9s;--c:143,55,33">
+    <img class="dot" src="s04/d24.png" alt="" style="--x:57.83%;--y:73.57%;--s:1.92%;--d:4.4s;--o:-1.5s;--c:143,55,33">
+    <img class="dot" src="s04/d25.png" alt="" style="--x:30.12%;--y:79.40%;--s:1.75%;--d:4.2s;--o:-0.2s;--c:79,140,122">
+    <div class="tx et body" style="left:14.20%;top:23.13%;width:31.74%;--fs:1.984cqw;text-align:center;color:#000000">Minuga koos v&#245;id sa tunda kurbust, viha v&#245;i ka palju tundeid koos, mis ajab segadusse.  <br><br>Ja j&#228;rgmisel hetkel v&#245;id tunda end rahuliku ja isegi r&#245;&#245;msana.</div>
+    <div class="tx et body" style="left:55.69%;top:23.13%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">K&#245;ik tunded on &#245;iged. <br><br>Nad aitavad su s&#252;damel aru saada sellest, mis sinuga toimub.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 8 ja 9">
+    <img class="fill" src="s05/bg.jpg" alt="">
+    <img class="drop" src="s05/r0.png" alt="" style="left:53.583%;top:15.753%;width:3.250%;--d:2.67s;--o:-0.8s">
+    <img class="drop" src="s05/r1.png" alt="" style="left:52.833%;top:20.537%;width:3.875%;--d:2.4s;--o:-2.18s">
+    <img class="drop" src="s05/r2.png" alt="" style="left:53.667%;top:25.671%;width:3.292%;--d:2.52s;--o:-2.56s">
+    <img class="drop" src="s05/r3.png" alt="" style="left:61.625%;top:29.230%;width:3.500%;--d:2.66s;--o:-2.57s">
+    <img class="drop" src="s05/r4.png" alt="" style="left:63.208%;top:30.630%;width:3.875%;--d:1.83s;--o:-1.22s">
+    <img class="drop" src="s05/r5.png" alt="" style="left:55.083%;top:30.747%;width:5.208%;--d:2.28s;--o:-0.18s">
+    <img class="drop" src="s05/r6.png" alt="" style="left:89.458%;top:31.039%;width:2.625%;--d:1.81s;--o:-2.33s">
+    <img class="drop" src="s05/r7.png" alt="" style="left:77.333%;top:32.380%;width:4.000%;--d:2.78s;--o:-2.2s">
+    <img class="drop" src="s05/r8.png" alt="" style="left:85.333%;top:33.139%;width:3.250%;--d:2.12s;--o:-1.97s">
+    <img class="drop" src="s05/r9.png" alt="" style="left:73.333%;top:33.372%;width:5.000%;--d:2.1s;--o:-2.07s">
+    <img class="drop" src="s05/r10.png" alt="" style="left:81.375%;top:34.014%;width:3.458%;--d:2.08s;--o:-2.19s">
+    <img class="drop" src="s05/r11.png" alt="" style="left:68.958%;top:34.947%;width:5.000%;--d:2.79s;--o:-2.76s">
+    <img class="drop" src="s05/r12.png" alt="" style="left:66.583%;top:36.523%;width:4.000%;--d:2.68s;--o:-2.56s">
+    <img class="drop" src="s05/r13.png" alt="" style="left:62.083%;top:37.748%;width:4.958%;--d:2.51s;--o:-1.55s">
+    <img class="drop" src="s05/r14.png" alt="" style="left:84.625%;top:38.448%;width:4.708%;--d:2.72s;--o:-0.25s">
+    <img class="drop" src="s05/r15.png" alt="" style="left:55.875%;top:39.557%;width:3.708%;--d:2.17s;--o:-1.7s">
+    <img class="drop" src="s05/r16.png" alt="" style="left:57.667%;top:40.432%;width:4.417%;--d:2.28s;--o:-2.22s">
+    <img class="drop" src="s05/r17.png" alt="" style="left:76.375%;top:42.357%;width:3.875%;--d:2.0s;--o:-0.17s">
+    <img class="drop" src="s05/r18.png" alt="" style="left:80.125%;top:42.532%;width:4.500%;--d:1.93s;--o:-2.7s">
+    <img class="drop" src="s05/r19.png" alt="" style="left:71.417%;top:43.524%;width:5.375%;--d:1.93s;--o:-0.63s">
+    <img class="drop" src="s05/r20.png" alt="" style="left:77.042%;top:44.749%;width:4.250%;--d:2.18s;--o:-1.75s">
+    <img class="drop" src="s05/r21.png" alt="" style="left:69.125%;top:44.807%;width:3.875%;--d:2.58s;--o:-0.22s">
+    <img class="drop" src="s05/r22.png" alt="" style="left:56.875%;top:45.858%;width:5.083%;--d:2.73s;--o:-2.14s">
+    <img class="drop" src="s05/r23.png" alt="" style="left:63.292%;top:46.324%;width:5.083%;--d:2.12s;--o:-0.53s">
+    <img class="drop" src="s05/r24.png" alt="" style="left:67.708%;top:50.233%;width:4.583%;--d:2.4s;--o:-1.67s">
+    <img class="drop" src="s05/r25.png" alt="" style="left:58.750%;top:50.408%;width:4.667%;--d:2.07s;--o:-0.47s">
+    <img class="drop" src="s05/r26.png" alt="" style="left:63.708%;top:51.225%;width:4.875%;--d:2.57s;--o:-1.88s">
+    <img class="drop" src="s05/r27.png" alt="" style="left:72.000%;top:51.517%;width:4.042%;--d:2.6s;--o:-0.61s">
+    <img class="drop" src="s05/r28.png" alt="" style="left:74.250%;top:55.951%;width:3.583%;--d:2.52s;--o:-0.21s">
+    <img class="drop" src="s05/r29.png" alt="" style="left:77.250%;top:56.009%;width:3.250%;--d:1.81s;--o:-0.5s">
+    <img class="drop" src="s05/r30.png" alt="" style="left:78.042%;top:66.103%;width:1.917%;--d:2.58s;--o:-1.51s">
+    <div class="tx et body" style="left:8.26%;top:24.10%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Vahel ajan ma sind ja sinu l&#228;hedasi nutma. <br><br><br>Nutmine toob kurbuse sinust v&#228;lja ja teeb nii ruumi teistele tunnetele, mida on vaja tunda.  <br><br><br>Nutmine on kasulik ja sa ei pea kartma , et sinu kurbus ka teisi nutma ajab. Ka nende kurbus tahab v&#228;lja saada, et see &#252;le l&#228;heks.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 10 ja 11">
+    <img class="fill" src="s06/bg.jpg" alt="">
+    <div class="eye" style="left:32.632%;top:61.031%;width:1.248%;height:3.164%;background:rgb(111,154,139);rotate:-7.5deg"><i style="--px:47.9%;--py:60.7%;--ps:109.4%;background:rgb(23,38,46)"></i></div>
+    <div class="eye" style="left:34.404%;top:60.763%;width:1.333%;height:2.963%;background:rgb(112,155,139);rotate:-3.8deg"><i style="--px:49.4%;--py:60.2%;--ps:94.7%;background:rgb(23,37,46)"></i></div>
+    <div class="tx et body" style="left:54.87%;top:31.29%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Ma toon endaga kaasa ka palju m&#245;tteid. <br><br>M&#245;tted on nagu lained meres. Neid on nii palju, nad tulevad muudkui &#252;ksteise j&#228;rel ja v&#245;ivad olla v&#228;ga v&#228;sitavad.</div>
+    <div class="tx et lab pulse light" style="left:43.28%;top:64.2%;--fs:1.951cqw;color:#ffffff;--d:3.65s;--o:-0.7s">Miks nii juhtus?</div>
+    <div class="tx et lab pulse light wrap" style="left:35.16%;top:70.62%;--fs:1.951cqw;color:#ffffff;--d:4.10s;--o:-1.4s">Kas ma saan tema toa n&#252;&#252;d endale?</div>
+    <div class="tx et lab pulse light" style="left:75.06%;top:83.48%;--fs:1.951cqw;color:#ffffff;--d:4.55s;--o:-2.1s">Kus sa n&#252;&#252;d oled?</div>
+    <div class="tx et lab pulse light" style="left:61.36%;top:76.07%;--fs:1.951cqw;color:#ffffff;--d:3.20s;--o:-2.8s">Mis n&#252;&#252;d edasi saab?</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 12 ja 13">
+    <img class="fill" src="s07/bg.jpg" alt="">
+    <div class="tx et body" style="left:11.46%;top:16.30%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">M&#245;ned m&#245;tted muudavad sind kurvaks. <br><br>M&#245;ned m&#245;tted v&#245;ivad sind &#252;llatada ja tunduda valed ja piinlikud.</div>
+    <div class="tx et body" style="left:55.19%;top:16.30%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">K&#245;ik m&#245;tted on &#245;iged ja sa ei pea neid tegelikult kartma. <br><br>Nad aitavad sul uues olukorras kohaneda.</div>
+    <div class="tx et lab pulse" style="left:24.02%;top:52.61%;--fs:1.951cqw;color:#16232c;--d:3.65s;--o:-0.7s">Mida &#8220;surnud&#8220; &#252;ldse t&#228;hendab?</div>
+    <div class="tx et lab pulse light wrap" style="left:77.89%;top:79.35%;--fs:1.951cqw;color:#ffffff;--d:4.10s;--o:-1.4s">Kas mina tegin midagi valesti, et nii juhtus?</div>
+    <div class="tx et lab pulse light" style="left:36.39%;top:77.35%;--fs:1.951cqw;color:#ffffff;--d:4.55s;--o:-2.1s">Ma kardan teda unustada</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 14 ja 15">
+    <img class="fill" src="s08/bg-v4.jpg" alt="">
+    <img class="turn" src="s08/od0.png" alt="" style="left:2.083%;top:26.138%;width:3.583%;--d:9s;animation-direction:normal">
+    <img class="turn" src="s08/od1.png" alt="" style="left:36.125%;top:13.652%;width:4.083%;--d:11s;animation-direction:reverse">
+    <img class="turn" src="s08/od2.png" alt="" style="left:42.125%;top:15.228%;width:4.583%;--d:8.5s;animation-direction:normal">
+    <img class="turn" src="s08/od3.png" alt="" style="left:44.542%;top:25.554%;width:3.833%;--d:12s;animation-direction:reverse">
+    <img class="turn" src="s08/od4.png" alt="" style="left:44.250%;top:67.503%;width:4.000%;--d:10s;animation-direction:normal">
+    <img class="turn" src="s08/od5.png" alt="" style="left:7.417%;top:75.904%;width:4.000%;--d:9.5s;animation-direction:reverse">
+    <div class="tx et body" style="left:53.22%;top:26.32%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Vahel ma v&#245;in muuta sind lausa haigeks ja sa tunned end v&#228;ga halvasti. <br><br>Su s&#252;da v&#245;ib hakata v&#228;ga kiiresti l&#246;&#246;ma ja sulle tundub, et kohe juhtub midagi v&#228;ga halba. <br><br>Kui nii juhtub, siis mul on &#252;ks m&#228;ng, mis aitab.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 16 ja 17">
+    <img class="fill" src="s09/bg.jpg" alt="">
+    <img class="whale" src="s09/w0.png" alt="" style="left:76.333%;top:32.030%;width:12.625%;--dx:-.7cqw;--dy:.35cqw;--r:-2deg;--d:6.5s">
+    <img class="whale" src="s09/w1.png" alt="" style="left:71.958%;top:50.642%;width:15.125%;--dx:-.9cqw;--dy:-.15cqw;--r:1.5deg;--d:7.4s">
+    <img class="bubble" src="s09/b0.png" alt="" style="left:86.542%;top:28.296%;width:2.167%;--d:5.6s;--o:-1.2s">
+    <img class="bubble" src="s09/b1.png" alt="" style="left:60.708%;top:28.471%;width:1.333%;--d:6.5s;--o:-0.4s">
+    <img class="bubble" src="s09/b2.png" alt="" style="left:64.292%;top:28.646%;width:1.583%;--d:6.2s;--o:-2.9s">
+    <img class="bubble" src="s09/b3.png" alt="" style="left:82.167%;top:29.522%;width:2.250%;--d:5.5s;--o:-0.2s">
+    <img class="bubble" src="s09/b4.png" alt="" style="left:66.875%;top:30.338%;width:2.000%;--d:5.6s;--o:-2.6s">
+    <img class="bubble" src="s09/b5.png" alt="" style="left:74.667%;top:30.805%;width:1.750%;--d:6.1s;--o:-0.6s">
+    <img class="bubble" src="s09/b6.png" alt="" style="left:61.875%;top:32.847%;width:1.917%;--d:5.9s;--o:-2.7s">
+    <img class="bubble" src="s09/b7.png" alt="" style="left:74.750%;top:34.014%;width:1.417%;--d:5.9s;--o:-2.5s">
+    <img class="bubble" src="s09/b8.png" alt="" style="left:75.750%;top:37.398%;width:1.500%;--d:6.7s;--o:-2.7s">
+    <img class="bubble" src="s09/b9.png" alt="" style="left:69.917%;top:41.074%;width:1.667%;--d:5.8s;--o:-0.7s">
+    <img class="bubble" src="s09/b10.png" alt="" style="left:68.708%;top:45.799%;width:1.667%;--d:5.8s;--o:-2.0s">
+    <img class="bubble" src="s09/b11.png" alt="" style="left:69.125%;top:49.242%;width:1.667%;--d:6.6s;--o:-3.1s">
+    <img class="bubble" src="s09/b12.png" alt="" style="left:70.833%;top:54.492%;width:1.500%;--d:5.7s;--o:-3.7s">
+    <div class="tx et body" style="left:10.32%;top:22.10%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">See m&#228;ng k&#228;ib nii: <br><br>Kui sa end v&#228;ga halvasti tunned, siis proovi leida enda &#252;mber &#252;les k&#245;ik asjad, mis algavad sinu nime esimese t&#228;hega. <br><br>Keera j&#228;rgmine leht ja proovime seda m&#228;ngu m&#228;ngida, et sa oleks valmis kui sul seda vaja peaks minema.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 18 ja 19">
+    <img class="fill" src="s10/bg.jpg" alt="">
+    <img class="apple" src="s10/a0.png" alt="" style="left:78.458%;top:9.568%;width:5.083%;--d:4.7s;--o:-0.8s">
+    <img class="apple" src="s10/a1.png" alt="" style="left:64.167%;top:22.637%;width:5.208%;--d:4.5s;--o:-0.6s">
+    <img class="apple" src="s10/a2.png" alt="" style="left:94.125%;top:25.671%;width:3.708%;--d:4.0s;--o:-0.5s">
+    <img class="apple" src="s10/a3.png" alt="" style="left:80.500%;top:28.646%;width:5.042%;--d:4.3s;--o:-3.4s">
+    <img class="apple" src="s10/a4.png" alt="" style="left:69.583%;top:47.083%;width:4.208%;--d:3.9s;--o:-3.8s">
+    <img class="apple" src="s10/a5.png" alt="" style="left:79.208%;top:47.958%;width:4.750%;--d:4.5s;--o:-1.4s">
+    <img class="apple" src="s10/a6.png" alt="" style="left:65.792%;top:85.064%;width:4.417%;--d:4.1s;--o:-3.0s">
+    <img class="apple" src="s10/a7.png" alt="" style="left:73.667%;top:89.265%;width:5.375%;--d:4.5s;--o:-3.7s">
+    <div class="tx et body" style="left:10.83%;top:28.17%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Millise t&#228;hega sinu nimi algab? <br><br>V&#228;ga hea! <br><br>Vaata n&#252;&#252;d enda &#252;mber ringi, kus iganes sa oled ja proovi leida asju, mis algavad selle t&#228;hega. <br><br>Ma ootan kuni sa seda teed.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 20 ja 21">
+    <img class="fill" src="s11/bg.jpg" alt="">
+    <img class="chick" src="s11/c0.png" alt="" style="left:19.708%;top:32.380%;width:3.833%;--d:2.6s;--o:-0.0s">
+    <img class="chick" src="s11/c1.png" alt="" style="left:17.708%;top:81.564%;width:8.333%;--d:2.95s;--o:-0.7s">
+    <img class="chick" src="s11/c2.png" alt="" style="left:26.917%;top:78.005%;width:7.167%;--d:3.3s;--o:-1.4s">
+    <img class="chick" src="s11/c3.png" alt="" style="left:33.958%;top:85.881%;width:4.792%;--d:3.65s;--o:-2.1s">
+    <img class="chick" src="s11/c4.png" alt="" style="left:73.958%;top:80.222%;width:7.500%;--d:4.0s;--o:-2.8s">
+    <div class="tx et body" style="left:55.57%;top:36.40%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Kas see m&#228;ng oli natuke raske?<br><br>Peabki natuke raske olema. <br><br>See m&#228;ng aitab sul m&#245;tted natukeseks mujale viia ja rahustab sinu keha. Nii hakkab kergem ja tunne l&#228;heb paremaks.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 22 ja 23">
+    <img class="fill" src="s12/bg.jpg" alt="">
+    <div class="eye" style="left:26.011%;top:48.935%;width:2.263%;height:4.568%;background:rgb(42,78,82);rotate:-5.5deg"><i style="--px:59.3%;--py:62.3%;--ps:78.2%;background:rgb(21,34,43)"></i></div>
+    <div class="eye" style="left:23.716%;top:49.495%;width:1.987%;height:4.369%;background:rgb(42,78,82);rotate:-4.5deg"><i style="--px:62.2%;--py:53.1%;--ps:84.2%;background:rgb(21,35,44)"></i></div>
+    <div class="tx et body" style="left:55.93%;top:13.78%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">On hea kui sa r&#228;&#228;gid minust oma s&#245;prade ja perega. <br><br>Kuigi teised ei n&#228;e sinu leina nii nagu sina, tunnevad nad, et midagi on teistmoodi. <br><br>Kui sa jagad nendega oma m&#245;tteid ja tundeid, saavad nad sinust paremini aru ja oskavad sulle abiks olla.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 24 ja 25">
+    <img class="fill" src="s13/bg.jpg" alt="">
+    <div class="memglow" style="left:21.67%;top:33.26%;width:26.67%"></div>
+    <div class="tx et body" style="left:55.65%;top:31.44%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">On hea r&#228;&#228;kida inimesest, kelle sa kaotasid. See aitab sinul ja teistel teda m&#228;letada. <br><br>Sa saad temaga oma m&#245;tetes alati koos olla ja r&#228;&#228;kida.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 26 ja 27">
+    <img class="fill" src="p26/base.jpg" alt="Poiss istub k&#252;nkal &#246;ise taeva all ja vaatab &#252;hte eredat t&#228;hte.">
+    <div class="spark" style="--x:66%;--y:31%;--s:4.5%;--d:3.4s;--o:-0.4s"><i></i></div>
+    <div class="spark" style="--x:79%;--y:28%;--s:5.6%;--d:4.1s;--o:-2.2s"><i></i></div>
+    <div class="spark" style="--x:86.5%;--y:33.5%;--s:3.6%;--d:2.9s;--o:-1.1s"><i></i></div>
+    <div class="spark" style="--x:58%;--y:56%;--s:4.2%;--d:3.7s;--o:-3s"><i></i></div>
+    <div class="spark" style="--x:93%;--y:46%;--s:4.6%;--d:4.4s;--o:-0.9s"><i></i></div>
+    <div class="spark" style="--x:66%;--y:59%;--s:3.4%;--d:3.1s;--o:-1.8s"><i></i></div>
+    <div class="glow"></div>
+    <div class="t s-text" data-k="p26"></div>
+    
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 28 ja 29">
+    <img class="fill" src="s15/bg.jpg" alt="">
+    <img class="heart" src="s15/heart.png" alt="" style="left:87.792%;top:14.411%;width:10.958%;transform-origin:21.3% 97.3%">
+    <div class="tx et body" style="left:53.57%;top:34.42%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Teie vahel on eriline side, mis ei katke ja j&#228;&#228;b alati sinuga. <br>Seda &#252;hendust hoiab armastus ja hoolimine. <br><br><br>Ja tore on see, et kui sa teed midagi, mida armastad, siis sa tunned seda &#252;hendust.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 30 ja 31">
+    <img class="fill" src="s16/bg.jpg" alt="">
+    <img class="ball" src="s16/ball.png" alt="" style="left:70.083%;top:39.498%;width:4.042%">
+    <div class="tx et body" style="left:9.24%;top:27.76%;width:35.60%;--fs:1.885cqw;text-align:center;color:#000000">Aja jooksul ma muutun. <br><br>Nii nagu sina muutud ja kasvad, muutun ka mina. <br><br>Aga on &#252;ks erinevus. Kui sina kasvad suuremaks, siis mina hoopis j&#228;&#228;n v&#228;iksemaks ja vaiksemaks.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 32 ja 33">
+    <img class="fill" src="s17/bg.jpg" alt="">
+    <img class="cloud" src="s17/cl0.png" alt="" style="left:59.250%;top:6.068%;width:40.750%;--d:11s;--o:-0s">
+    <img class="cloud" src="s17/cl1.png" alt="" style="left:57.208%;top:15.753%;width:17.583%;--d:14s;--o:-4s">
+    <div class="tx et body" style="left:9.11%;top:15.62%;width:35.60%;--fs:2.480cqw;text-align:center;color:#000000">&#220;hel p&#228;eval m&#228;rkad sa, et ma ei oma enam nii suurt osa sinu elus. <br><br>Sinu elus on siis palju uusi vahvaid asju ja mina ei ole enam sinuga pidevalt koos.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 34 ja 35">
+    <img class="fill" src="s18/bg.jpg" alt="">
+    <div class="eye" style="left:30.979%;top:17.938%;width:2.220%;height:4.589%;background:rgb(65,99,96);rotate:-7.8deg"><i style="--px:48.8%;--py:68.8%;--ps:70.4%;background:rgb(22,36,45)"></i></div>
+    <div class="eye" style="left:33.605%;top:17.744%;width:2.142%;height:4.581%;background:rgb(65,99,96);rotate:2.0deg"><i style="--px:37.9%;--py:73.1%;--ps:71.2%;background:rgb(23,37,46)"></i></div>
+    <div class="tx et body" style="left:56.87%;top:13.20%;width:32.92%;--fs:1.885cqw;text-align:center;color:#000000">Aga isegi tulevikus v&#245;in ma sind ootamatult &#252;llatada. Hetkedel, mil sa mind k&#245;ige v&#228;hem ootad. <br><br><br>Kui ma siis ootamatult v&#228;lja ilmun,  tuleta endale meelde, et sa juba tead mind. <br><br>Ma olen nagu s&#245;ber, kes vahel on jonnakalt kohal ka siis kui sul on hoopis muud plaanid.</div>
+  </section>
+  <section class="sheet spread" aria-label="Lehek&#252;ljed 36 ja 37">
+    <img class="fill" src="s19/bg.jpg" alt="">
+    <div class="eye" style="left:71.337%;top:59.325%;width:2.501%;height:6.145%;background:rgb(78,138,121);rotate:-8.3deg"><i style="--px:68.2%;--py:63.7%;--ps:67.7%;background:rgb(21,36,44)"></i></div>
+    <div class="eye" style="left:76.058%;top:58.922%;width:2.154%;height:6.239%;background:rgb(78,138,121);rotate:5.2deg"><i style="--px:47.6%;--py:60.9%;--ps:76.0%;background:rgb(21,36,44)"></i></div>
+    <div class="tx et body" style="left:6.32%;top:19.50%;width:32.92%;--fs:1.885cqw;text-align:center;color:#000000">N&#252;&#252;d sa tead kes ma olen ja miks ma sinu juurde tulin. <br>Sa ei pea mind enam kartma. <br>Ma olen sinu Lein. <br><br>Ma toon sinu ellu palju uusi kogemusi ja k&#245;ik nad ei ole &#252;ldse meeldivad. Aga nii ma aitan sul kaotusega hakkama saada ja kasvada. Et sa leiaks uuesti oma elur&#245;&#245;mu.</div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Eelmine leht">&larr;</button>
+  <span class="count" id="count"></span>
+  <button id="next" aria-label="J&#228;rgmine leht">&rarr;</button>
+</div>
+
+<script>
+const TEXT = {
+  en: {
+    title: ["Growing with", "GRIEF"],
+    sub: ["Navigating the Changes Grief Brings to Children"],
+    author: ["Kei Karlson"],
+    blurb: ["Through the gentle voice of Grief itself, this book offers solace, understanding, and coping mechanisms.",
+            "Children will learn that it's okay to experience a myriad of emotions, from sadness to happiness, and that they're never alone in their journey.",
+            "With illustrative examples and relatable scenarios, \u201cGrowing with Grief\u201d aids in building resilience and finding comfort during challenging times."],
+    ded: ["To our darling Patrick.", "Love goes on."],
+    p26: ["If you think of a question for them, most times your heart can guess their answer.",
+          "Want to try this?", "Think of something to ask them.", "What answer do you feel in your heart?"]
+  },
+  de: {
+    title: ["Wachsen mit", "KUMMER"],
+    sub: ["Den Ver\u00e4nderungen begegnen, die der Kummer Kindern bringt"],
+    author: ["Kei Karlson"],
+    blurb: ["Durch die sanfte Stimme des Kummers selbst bietet dieses Buch Trost, Verst\u00e4ndnis und Bew\u00e4ltigungsstrategien.",
+            "Kinder werden lernen, dass es in Ordnung ist, eine Vielzahl von Emotionen zu erleben, von Traurigkeit bis Gl\u00fcck, und dass sie auf ihrer Reise nie alleine sind.",
+            "Mit anschaulichen Beispielen und nachvollziehbaren Szenarien unterst\u00fctzt \u201eWachsen mit Kummer\u201c beim Aufbau von Widerstandsf\u00e4higkeit und beim Finden von Trost in herausfordernden Zeiten."],
+    ded: ["F\u00fcr unseren lieben Patrick.", "Die Liebe bleibt."],
+    p26: ["Wenn du eine Frage an sie hast, kann dein Herz meistens ihre Antwort erraten.",
+          "M\u00f6chtest du das versuchen? Denke an eine Frage, die du ihnen stellen m\u00f6chtest.",
+          "Welche Antwort sp\u00fcrst du in deinem Herzen?"]
+  }
+,
+  et: {"title": ["Leinaga", "kasvamine"], "sub": ["Muutused, mida lein endaga toob ja kuidas nendega hakkama saada"], "author": ["Kei Karlson"], "blurb": ["Selles raamatus r\u00e4\u00e4gib Lein lapsele muutustest ja kogemustest, mida l\u00e4hedase kaotus kaasa toob.", "Mida lein t\u00e4hendab, kuidas ta aitab muutustega kohaneda ja kuidas sellest lastega r\u00e4\u00e4kida. See raamat on abiks ja pidepunktiks.", "Raamatu autoriks on ema, kes kaotas oma 17 aastase poja ja koges leina koos 12 aastase lapsega. Kaks aastat hiljem pani ta kirja selle, mida koos \u00f5piti ja mis v\u00f5iks abiks olla ka k\u00f5igile teistele, kes leina kogevad."], "ded": ["Kallile Patrickule", "Armastus kestab edasi"], "p26": ["Kui sa m\u00f5tled m\u00f5nele k\u00fcsimusele, mida sa tahaksid temalt k\u00fcsida, siis enamasti sa tead oma s\u00fcdames, mida ta sulle vastaks.", "Tahad proovida?", "Mida sa sooviksid temalt k\u00fcsida?", "Mis sa arvad, mida ta sulle vastaks?"]}
+};
+const UI = {
+  en:{orig:"Show original page", live:"Show living page", prev:"Previous page", next:"Next page"},
+  de:{orig:"Originalseite zeigen", live:"Lebendige Seite zeigen", prev:"Vorherige Seite", next:"N\u00e4chste Seite"}
+,
+  et:{"orig": "N\u00e4ita originaali", "live": "N\u00e4ita elavat lehte", "prev": "Eelmine leht", "next": "J\u00e4rgmine leht"}
+};
+
+const stage = document.getElementById('stage');
+const sheets = [...stage.querySelectorAll('.sheet')];
+const cmp = document.getElementById('cmp');
+let lang = 'et';
+
+function setLang(l){
+  lang = l;
+  try { localStorage.setItem('gwg-lang', l); } catch(e) {}
+  document.documentElement.lang = l;
+  stage.dataset.lang = l;
+  stage.querySelectorAll('[data-k]').forEach(el => {
+    el.innerHTML = TEXT[l][el.dataset.k].map(t => `<p>${t}</p>`).join('');
+  });
+  document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === l));
+  if (cmp) cmp.textContent = stage.classList.contains('show-orig') ? UI[l].live : UI[l].orig;
+  document.getElementById('prev').setAttribute('aria-label', UI[l].prev);
+  document.getElementById('next').setAttribute('aria-label', UI[l].next);
+}
+
+/* views: on wide screens one per sheet; on phones a spread gives two (the cover only its front) */
+let wide = true, views = [], at = 0;
+function buildViews(){
+  views = [];
+  sheets.forEach((s, i) => {
+    if (wide || s.classList.contains('single')) views.push({i, half:null});
+    else if (s.dataset.front === 'right') views.push({i, half:'right'});
+    else { views.push({i, half:'left'}); views.push({i, half:'right'}); }
+  });
+}
+function layout(){
+  const cur = views[at];
+  const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  wide = vw >= 720 && vw / vh >= 0.9;
+  stage.classList.toggle('wide', wide); stage.classList.toggle('narrow', !wide);
+  const aspect = wide ? 2000/1428 : 1000/1428;
+  const availW = vw, availH = vh;
+  const w = Math.max(240, Math.min(availW, availH * aspect));
+  stage.style.width = w + 'px'; stage.style.height = (w / aspect) + 'px';
+  buildViews();
+  if (cur) {
+    const j = views.findIndex(v => v.i === cur.i && (v.half === cur.half || v.half === null || cur.half === null));
+    at = j < 0 ? 0 : j;
+  }
+  show(at, true);
+}
+function show(n, instant){
+  at = Math.max(0, Math.min(views.length - 1, n));
+  const v = views[at];
+  sheets.forEach((s, i) => {
+    s.classList.toggle('on', i === v.i);
+    if (i === v.i) s.classList.toggle('right', v.half === 'right');
+  });
+  document.getElementById('count').textContent = `${at + 1} / ${views.length}`;
+  document.getElementById('prev').disabled = at === 0;
+  document.getElementById('next').disabled = at === views.length - 1;
+}
+
+document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+if (cmp) cmp.onclick = () => {
+  const on = stage.classList.toggle('show-orig');
+  cmp.setAttribute('aria-pressed', on);
+  if (cmp) cmp.textContent = on ? UI[lang].live : UI[lang].orig;
+};
+document.getElementById('prev').onclick = () => show(at - 1);
+document.getElementById('next').onclick = () => show(at + 1);
+addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') show(at + 1);
+  if (e.key === 'ArrowLeft') show(at - 1);
+});
+let x0 = null;
+stage.addEventListener('pointerdown', e => { x0 = e.clientX; });
+stage.addEventListener('pointerup', e => {
+  if (x0 === null) return;
+  const dx = e.clientX - x0; x0 = null;
+  if (Math.abs(dx) > 40) show(at + (dx < 0 ? 1 : -1));
+});
+addEventListener('resize', layout);
+
+setLang(lang);
+layout();
+</script>
+
+</body>
+</html>
